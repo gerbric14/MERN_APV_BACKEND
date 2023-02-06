@@ -1,0 +1,60 @@
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import generarId from '../helpers/generarId.js';
+
+//FORMA QUE TENDRAN LOS DATOS
+const veterinarioSchema = mongoose.Schema({
+    nombre: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+    password: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+    },
+    telefono: {
+        type: String,
+        default: null,
+        trim: true,
+    },
+    web: {
+        type: String,
+        default: null,
+    },
+    token: {
+        type: String,
+        default: generarId(),
+    },
+    confirmado: {
+        type: Boolean,
+        default: false,
+    },
+});
+
+veterinarioSchema.pre('save',async function(next) { //se usa la funcion por le this.
+    //PREVENIR QUE SI EL PASSWORD YA ESTA HASHEADO NO LO VUELVA HACER
+    if(!this.isModified('password')){
+        next(); //SE LE INDICA VAYA AL SIGUIENTE MIDDLEWARE (LOS ESPECIFICADOS EN INDEX.JS)
+    };
+
+    //HASHEAR PASSWORD
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+
+} );
+
+veterinarioSchema.methods.comprobarPassword = async function (passwordFormulario){
+    return await bcrypt.compare(passwordFormulario, this.password);
+}
+
+//REGISTRAR COMO MODELO
+const Veterinario = mongoose.model('Veterinario', veterinarioSchema);
+
+export default Veterinario;
